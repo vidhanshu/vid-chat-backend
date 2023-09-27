@@ -11,6 +11,7 @@ import { connectDB } from "./configs/db";
 
 import AuthRoutes from "./routes/auth.route";
 import UserRoutes from "./routes/user.route";
+import ChatRoutes from "./routes/chat.route";
 
 // connect to db
 connectDB();
@@ -41,6 +42,7 @@ app.get("/server-health", (req, res) => {
 });
 app.use(`/api/auth`, AuthRoutes);
 app.use(`/api/users`, UserRoutes);
+app.use(`/api/chats`, ChatRoutes);
 
 // Server setup
 server.listen(PORT, () => {
@@ -49,24 +51,88 @@ server.listen(PORT, () => {
 
 //  socket setup
 io.on("connection", (socket) => {
-  console.log(`user connected: ${socket.id}`);
-
   socket.on(
     "addUser",
     ({ username, userId }: { username: string; userId: string }) => {
-      addUser({
-        userId,
-        socketId: socket.id,
-        username,
-      });
-      console.log("[USERS]", USERS);
+      if (userId) {
+        addUser({
+          userId,
+          socketId: socket.id,
+          username,
+        });
+        console.log("[ACTIVE_USERS]", USERS);
 
-      io.emit("getUsers", USERS);
+        const users: {
+          [key: string]: boolean;
+        } = {};
+
+        USERS.forEach((user) => {
+          users[user.userId] = true;
+        });
+
+        console.log(users);
+
+        io.emit("getUsers", users);
+      }
+    }
+  );
+
+  socket.on(
+    "sendMessage",
+    ({
+      message,
+      receiver,
+      sender,
+    }: {
+      message: string;
+      receiver: string;
+      sender: string;
+    }) => {
+      const receiverSocketId = getUser(receiver)?.socketId;
+      const senderSocketId = getUser(sender)?.socketId;
+
+      console.log("[USERS]", USERS);
+      console.log(
+        "[receiverSocketId]",
+        receiverSocketId,
+        "[receiver]",
+        receiver,
+        "[sender]",
+        sender
+      );
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("newMessage", {
+          // TODO: currently returning the dummy id to match frontend message type
+          _id: new Date().getTime().toString(),
+          message,
+          sender,
+          receiver,
+          createdAt: new Date().getTime(),
+        });
+      }
+      if (senderSocketId) {
+        io.to(senderSocketId).emit("newMessage", {
+          // TODO: currently returning the dummy id to match frontend message type
+          _id: new Date().getTime().toString(),
+          message,
+          sender,
+          receiver,
+          createdAt: new Date().getTime(),
+        });
+      }
     }
   );
 
   socket.on("disconnect", () => {
     console.log(`user disconnected: ${socket.id}`);
     removeUser(socket.id);
+    const users: {
+      [key: string]: boolean;
+    } = {};
+
+    USERS.forEach((user) => {
+      users[user.userId] = true;
+    });
+    io.emit("getUsers", users);
   });
 });

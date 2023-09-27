@@ -4,7 +4,7 @@ type TUser = {
   username: string;
 };
 
-export const USERS: TUser[] = [];
+export let USERS: TUser[] = [];
 
 export const addUser = ({ userId, username, socketId }: TUser) => {
   if (!USERS.some((user) => user.userId === userId)) {
@@ -17,8 +17,5 @@ export const getUser = (userId: string) => {
 };
 
 export const removeUser = (socketId: string) => {
-  USERS.splice(
-    USERS.findIndex((user) => user.socketId === socketId),
-    1
-  );
+  USERS = USERS.filter((user) => user.socketId !== socketId);
 };

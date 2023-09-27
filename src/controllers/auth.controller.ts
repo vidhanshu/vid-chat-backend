@@ -4,33 +4,35 @@ import validator from "validator";
 import User from "../models/user.model";
 import { signJWT } from "../utils/jwt";
 import { IGetUserAuthInfoRequest } from "../@types/types";
+import {
+  ResponseError,
+  ReturnCatchedErrorResponse,
+  sendResponse,
+} from "../utils/response";
 
 export async function signUp(req: IGetUserAuthInfoRequest, res: Response) {
   const { username, email, password } = req.body;
 
-  if (!username || !email || !password)
-    return res
-      .status(400)
-      .json({ error: "Missing email, password or username" });
-  if (!validator.isEmail(email))
-    return res.status(400).json({ error: "Invalid email" });
-  if (!validator.isStrongPassword(password))
-    return res.status(400).json({
-      error:
-        "Password must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 number and 1 symbol",
-    });
-  if (!validator.isAlphanumeric(username)) {
-    return res.status(400).json({
-      error: "Username must be alphanumeric",
-    });
-  }
-
   try {
-    const oldUser = await User.findOne({ email });
-    if (oldUser) {
-      return res
-        .status(400)
-        .json({ error: "User already exists with this email" });
+    if (!username || !email || !password)
+      throw new ResponseError("Missing email, password or username", 400);
+    if (!validator.isEmail(email))
+      throw new ResponseError("Invalid email", 400);
+    if (!validator.isStrongPassword(password))
+      throw new ResponseError(
+        "Password must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 number and 1 symbol",
+        400
+      );
+    if (!validator.isAlphanumeric(username)) {
+      throw new ResponseError("Username must be alphanumeric", 400);
+    }
+
+    // if username or email already taken
+    if (
+      !!(await User.findOne({ email })) ||
+      !!(await User.findOne({ username }))
+    ) {
+      throw new ResponseError("User already exists", 400);
     }
 
     const newUser = new User({ username, email, password });
@@ -38,51 +40,56 @@ export async function signUp(req: IGetUserAuthInfoRequest, res: Response) {
     newUser.access_token = token;
 
     await newUser.save();
-    return res.status(201).json({ token });
+    sendResponse(res, {
+      token,
+      message: "Successfully sign up",
+      statusCode: 201,
+    });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    ReturnCatchedErrorResponse(res, error);
   }
 }
 
 export async function SignIn(req: Request, res: Response) {
   const { email, password } = req.body;
 
-  if (!email || !password)
-    return res.status(400).send("Missing email or password");
-  if (!validator.isEmail(email)) return res.status(400).send("Invalid email");
-  if (!validator.isStrongPassword(password))
-    return res
-      .status(400)
-      .send(
-        "Password must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 number and 1 symbol"
+  try {
+    if (!email || !password)
+      throw new ResponseError("Missing email or password", 400);
+    if (!validator.isEmail(email))
+      throw new ResponseError("Invalid email", 400);
+    if (!validator.isStrongPassword(password))
+      throw new ResponseError(
+        "Password must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 number and 1 symbol",
+        400
       );
 
-  try {
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(401).send("User does not exist");
+    if (!user) throw new ResponseError("User does not exist", 404);
 
     const isMatch = await user.isValidPassword(password);
-    if (!isMatch) return res.status(401).send("Invalid credentials");
+    if (!isMatch) throw new ResponseError("Invalid password", 400);
 
     const token = signJWT(user._id);
     user.access_token = token;
 
     await user.save();
-    return res.status(200).json({ token });
+    sendResponse(res, { token, message: "Successfully sign in" });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    ReturnCatchedErrorResponse(res, error);
   }
 }
 
 export async function SignOut(req: IGetUserAuthInfoRequest, res: Response) {
   try {
     const user = req.user;
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    if (!user) throw new ResponseError("Unauthorized", 401);
 
     await User.findByIdAndUpdate(user._id, { access_token: "" });
-    res.status(200).json({ message: "Successfully logged out" });
-  } catch (error) {
-    res.status(500).json({ error: "Something went wrong!" });
+
+    sendResponse(res, { message: "Successfully signed out" });
+  } catch (error: any) {
+    ReturnCatchedErrorResponse(res, error);
   }
 }
