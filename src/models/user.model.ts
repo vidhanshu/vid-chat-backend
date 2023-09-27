@@ -4,6 +4,10 @@ import { IUser } from "./types";
 
 const UserSchema = new Schema(
   {
+    avatar: {
+      type: String,
+      trim: true,
+    },
     username: {
       type: String,
       unique: true,

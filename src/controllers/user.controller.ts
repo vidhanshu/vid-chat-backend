@@ -38,15 +38,24 @@ export async function SearchUser(req: IGetUserAuthInfoRequest, res: Response) {
 
 export async function UpdateUser(req: IGetUserAuthInfoRequest, res: Response) {
   try {
-    const { email, password, username } = req.body;
+    const { email, password, username, avatar } = req.body;
     const id = req.user?._id;
     if (!id) throw new ResponseError("User not found", 404);
-    if (!email && !password && !username)
+    if (!email && !password && !username && !avatar)
       throw new ResponseError("Nothing to update", 400);
 
     let isEmailUpdated = false;
     let isUsernameUpdated = false;
     let isPasswordUpdae = false;
+    let isAvatarUpdated = false;
+
+    // Avatar
+    if (avatar) {
+      await User.findByIdAndUpdate(id, {
+        avatar,
+      });
+      isAvatarUpdated = true;
+    }
 
     // Email
     if (email) {
@@ -77,7 +86,7 @@ export async function UpdateUser(req: IGetUserAuthInfoRequest, res: Response) {
     }
     const message = `Updated ${isEmailUpdated ? "email " : ""}${
       isUsernameUpdated ? "username " : ""
-    }${isPasswordUpdae ? "password " : ""}`;
+    }${isPasswordUpdae ? "password " : ""}${isAvatarUpdated ? "avatar " : ""}`;
 
     const updatedUser = await User.findById(id);
     sendResponse(res, { message, data: updatedUser });

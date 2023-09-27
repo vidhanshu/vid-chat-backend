@@ -1,7 +1,7 @@
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
 import { JWT_SECRET } from "../configs/env";
-import mongoose from "mongoose";
 
 export const signJWT = (_id: mongoose.Types.ObjectId) =>
   jwt.sign({ _id }, JWT_SECRET, { expiresIn: "15d" });

@@ -12,6 +12,7 @@ import { connectDB } from "./configs/db";
 import AuthRoutes from "./routes/auth.route";
 import UserRoutes from "./routes/user.route";
 import ChatRoutes from "./routes/chat.route";
+import UploadRutes from "./routes/aws-upload.route";
 
 // connect to db
 connectDB();
@@ -43,6 +44,7 @@ app.get("/server-health", (req, res) => {
 app.use(`/api/auth`, AuthRoutes);
 app.use(`/api/users`, UserRoutes);
 app.use(`/api/chats`, ChatRoutes);
+app.use(`/api/image`, UploadRutes);
 
 // Server setup
 server.listen(PORT, () => {
@@ -60,7 +62,6 @@ io.on("connection", (socket) => {
           socketId: socket.id,
           username,
         });
-        console.log("[ACTIVE_USERS]", USERS);
 
         const users: {
           [key: string]: boolean;
@@ -69,8 +70,6 @@ io.on("connection", (socket) => {
         USERS.forEach((user) => {
           users[user.userId] = true;
         });
-
-        console.log(users);
 
         io.emit("getUsers", users);
       }
@@ -91,15 +90,6 @@ io.on("connection", (socket) => {
       const receiverSocketId = getUser(receiver)?.socketId;
       const senderSocketId = getUser(sender)?.socketId;
 
-      console.log("[USERS]", USERS);
-      console.log(
-        "[receiverSocketId]",
-        receiverSocketId,
-        "[receiver]",
-        receiver,
-        "[sender]",
-        sender
-      );
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("newMessage", {
           // TODO: currently returning the dummy id to match frontend message type
@@ -124,7 +114,6 @@ io.on("connection", (socket) => {
   );
 
   socket.on("disconnect", () => {
-    console.log(`user disconnected: ${socket.id}`);
     removeUser(socket.id);
     const users: {
       [key: string]: boolean;
