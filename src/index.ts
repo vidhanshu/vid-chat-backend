@@ -88,11 +88,9 @@ io.on("connection", (socket) => {
       sender: string;
     }) => {
       const receiverSocketId = getUser(receiver)?.socketId;
-      const senderSocketId = getUser(sender)?.socketId;
 
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("newMessage", {
-          // TODO: currently returning the dummy id to match frontend message type
           _id: new Date().getTime().toString(),
           message,
           sender,
@@ -100,14 +98,26 @@ io.on("connection", (socket) => {
           createdAt: new Date().getTime(),
         });
       }
-      if (senderSocketId) {
-        io.to(senderSocketId).emit("newMessage", {
-          // TODO: currently returning the dummy id to match frontend message type
-          _id: new Date().getTime().toString(),
-          message,
+    }
+  );
+
+  // typing stuffs
+  socket.on(
+    "typing",
+    ({
+      receiver,
+      sender,
+      meTyping,
+    }: {
+      receiver: string;
+      sender: string;
+      meTyping: boolean;
+    }) => {
+      const receiverSocketId = getUser(receiver)?.socketId;
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receiverTyping", {
+          typing: meTyping,
           sender,
-          receiver,
-          createdAt: new Date().getTime(),
         });
       }
     }
