@@ -46,7 +46,7 @@ app.get("/server-health", (req, res) => {
 app.use(`/api/auth`, AuthRoutes);
 app.use(`/api/users`, UserRoutes);
 app.use(`/api/chats`, ChatRoutes);
-app.use(`/api/image`, UploadRutes);
+app.use(`/api/file`, UploadRutes);
 
 // Server setup
 server.listen(PORT, () => {
@@ -80,7 +80,7 @@ io.on("connection", (socket) => {
 
   socket.on(
     "sendMessage",
-    ({ _id, message, receiver, sender, chat }: TMessage) => {
+    ({ _id, message, fileUrl, receiver, sender, chat }: TMessage) => {
       const receiverSocketId = getUser(receiver)?.socketId;
 
       if (receiverSocketId) {
@@ -89,6 +89,7 @@ io.on("connection", (socket) => {
           _id,
           message,
           sender,
+          fileUrl,
           receiver,
           createdAt: new Date().getTime(),
           updatedAt: new Date().getTime(),
@@ -121,12 +122,23 @@ io.on("connection", (socket) => {
 
   socket.on(
     "deleteMessage",
-    ({ messageId, receiver }: { messageId: string; receiver: string }) => {
+    ({
+      messageId,
+      receiver,
+      isFileDeleted,
+    }: {
+      messageId: string;
+      receiver: string;
+      isFileDeleted?: boolean;
+    }) => {
       const receiverSocketId = getUser(receiver)?.socketId;
       console.log("[MESSAGE_DELETE]: receiverSocketId", receiverSocketId);
 
       if (receiverSocketId) {
-        io.to(receiverSocketId).emit("deleteMessage", messageId);
+        io.to(receiverSocketId).emit("deleteMessage", {
+          messageId,
+          isFileDeleted,
+        });
       }
     }
   );

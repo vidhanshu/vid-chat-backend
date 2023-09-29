@@ -61,11 +61,15 @@ export async function sendMessage(req: IGetUserAuthInfoRequest, res: Response) {
     const senderId = req.user?._id;
     const receiverId = req.params.userId;
     const message = req.body.message;
-    if (!senderId || !receiverId || !message)
-      throw new ResponseError(
-        "Message, senderId or ReceiverId is missing",
-        400
-      );
+    const fileUrl = req.body.fileUrl;
+
+    console.log("[FROM_SEND_MESSAGE_CONTROLLER]", fileUrl, message);
+
+    if (!senderId || !receiverId)
+      throw new ResponseError("senderId or ReceiverId is missing", 400);
+
+    if (!message && !fileUrl)
+      throw new ResponseError("Message or fileUrl is required", 400);
 
     if (senderId.toString() === receiverId) {
       throw new ResponseError("You cannot send message to yourself", 400);
@@ -95,7 +99,8 @@ export async function sendMessage(req: IGetUserAuthInfoRequest, res: Response) {
     const newMessage = await Message.create({
       sender: senderId,
       receiver: receiverId,
-      message: message,
+      message,
+      fileUrl,
       chat: chat._id,
     });
 
@@ -143,6 +148,7 @@ export async function DeleteMessage(
 ) {
   try {
     const messageId = req.params.messageId;
+    const deleteFile = req.body.deleteFile;
     const userId = req.user?._id;
 
     if (!messageId || !userId) throw new ResponseError("Invalid data", 400);
@@ -158,6 +164,10 @@ export async function DeleteMessage(
 
     existingMessage.deleted = true;
     existingMessage.message = "This message has been deleted";
+
+    if (deleteFile) {
+      existingMessage.fileUrl = undefined;
+    }
 
     const chat = await Chat.findById(existingMessage.chat);
     if (chat) {

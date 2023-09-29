@@ -14,7 +14,11 @@ const MessageSchema = new Schema(
     },
     message: {
       type: String,
-      required: true,
+      required: false,
+    },
+    fileUrl: {
+      type: String,
+      required: false,
     },
     chat: {
       type: Schema.Types.ObjectId,
