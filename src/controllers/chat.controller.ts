@@ -104,3 +104,70 @@ export async function sendMessage(req: IGetUserAuthInfoRequest, res: Response) {
     ReturnCatchedErrorResponse(res, error);
   }
 }
+
+export async function EditMessage(req: IGetUserAuthInfoRequest, res: Response) {
+  try {
+    const messageId = req.params.messageId;
+    const message = req.body.message;
+    const userId = req.user?._id;
+
+    if (!messageId || !message || !userId)
+      throw new ResponseError("Invalid data", 400);
+
+    const existingMessage = await Message.findById(messageId);
+
+    if (!existingMessage) throw new ResponseError("Message not found", 404);
+    if (existingMessage.sender.toString() !== userId.toString())
+      throw new ResponseError("You cannot edit this message", 403);
+    if (existingMessage.deleted)
+      throw new ResponseError("Deleted message can't be edited", 400);
+
+    existingMessage.message = message;
+
+    const chat = await Chat.findById(existingMessage.chat);
+    if (chat) {
+      chat.last_message = "Message was edited";
+      await chat.save();
+    }
+
+    await existingMessage.save();
+    sendResponse(res, { message: "Message Edited Successfully" });
+  } catch (error) {
+    ReturnCatchedErrorResponse(res, error);
+  }
+}
+
+export async function DeleteMessage(
+  req: IGetUserAuthInfoRequest,
+  res: Response
+) {
+  try {
+    const messageId = req.params.messageId;
+    const userId = req.user?._id;
+
+    if (!messageId || !userId) throw new ResponseError("Invalid data", 400);
+
+    const existingMessage = await Message.findById(messageId);
+
+    if (!existingMessage) throw new ResponseError("Message not found", 404);
+
+    if (existingMessage.sender.toString() !== userId.toString())
+      throw new ResponseError("You cannot delete this message", 403);
+    if (existingMessage.deleted)
+      throw new ResponseError("Message already deleted", 400);
+
+    existingMessage.deleted = true;
+    existingMessage.message = "This message has been deleted";
+
+    const chat = await Chat.findById(existingMessage.chat);
+    if (chat) {
+      chat.last_message = "message was deleted";
+      await chat.save();
+    }
+
+    await existingMessage.save();
+    sendResponse(res, { message: "Message deleted successfully" });
+  } catch (error) {
+    ReturnCatchedErrorResponse(res, error);
+  }
+}

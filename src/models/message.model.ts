@@ -21,6 +21,14 @@ const MessageSchema = new Schema(
       ref: "Chat",
       required: true,
     },
+    deleted: {
+      type: Boolean,
+      default: false,
+    },
+    edited: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

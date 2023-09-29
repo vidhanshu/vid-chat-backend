@@ -14,6 +14,8 @@ import UserRoutes from "./routes/user.route";
 import ChatRoutes from "./routes/chat.route";
 import UploadRutes from "./routes/aws-upload.route";
 
+import { TMessage } from "./types";
+
 // connect to db
 connectDB();
 
@@ -78,24 +80,18 @@ io.on("connection", (socket) => {
 
   socket.on(
     "sendMessage",
-    ({
-      message,
-      receiver,
-      sender,
-    }: {
-      message: string;
-      receiver: string;
-      sender: string;
-    }) => {
+    ({ _id, message, receiver, sender, chat }: TMessage) => {
       const receiverSocketId = getUser(receiver)?.socketId;
 
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("newMessage", {
-          _id: new Date().getTime().toString(),
+          chat,
+          _id,
           message,
           sender,
           receiver,
           createdAt: new Date().getTime(),
+          updatedAt: new Date().getTime(),
         });
       }
     }
@@ -118,6 +114,41 @@ io.on("connection", (socket) => {
         io.to(receiverSocketId).emit("receiverTyping", {
           typing: meTyping,
           sender,
+        });
+      }
+    }
+  );
+
+  socket.on(
+    "deleteMessage",
+    ({ messageId, receiver }: { messageId: string; receiver: string }) => {
+      const receiverSocketId = getUser(receiver)?.socketId;
+      console.log("[MESSAGE_DELETE]: receiverSocketId", receiverSocketId);
+
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("deleteMessage", messageId);
+      }
+    }
+  );
+
+  socket.on(
+    "editMessage",
+    ({
+      messageId,
+      receiver,
+      message,
+    }: {
+      messageId: string;
+      receiver: string;
+      message: string;
+    }) => {
+      const receiverSocketId = getUser(receiver)?.socketId;
+      console.log("[MESSAGE_EDIT]: receiverSocketId", receiverSocketId);
+
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("editMessage", {
+          messageId,
+          message,
         });
       }
     }
