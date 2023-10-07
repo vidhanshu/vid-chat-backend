@@ -104,17 +104,19 @@
    - **GET**: /api/chats/
    - **GET**: /api/chats/conversation/:userId
    - **POST**: api/chats/message/:userId
-     ```
-       {
-          "message": "How are you?"
-       }
-     ```
+       - Body structure:
+         ```
+           {
+              "message": "How are you?"
+           }
+         ```
    - **PATCH**: api/chats/message/:messageId
-     ```
-       {
-          "message": "How are you?"
-       }
-     ```
+       - Body structure:
+         ```
+           {
+              "message": "How are you?"
+           }
+         ```
    - **DELETE**: api/chats/message/:messageId
 4. User end points
    - **GET**: /api/users/
@@ -122,11 +124,12 @@
          -  ?key=<username_or_email_to_search_user>
    - **GET**: /api/users/me
    - **PATCH**: api/users/update/
-     ```
-       {
-          "email"?:"email@example.com"
-          "username"?:"Username123"
-          "password"?:"Password@123"
-          "avatar"?:"link_to_avatar"
-        }
-     ```
+       - Body structure:
+         ```
+           {
+              "email"?:"email@example.com"
+              "username"?:"Username123"
+              "password"?:"Password@123"
+              "avatar"?:"link_to_avatar"
+            }
+         ```
