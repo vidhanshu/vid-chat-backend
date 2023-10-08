@@ -29,8 +29,16 @@ export async function signUp(req: IGetUserAuthInfoRequest, res: Response) {
 
     // if username or email already taken
     if (
-      !!(await User.findOne({ email })) ||
-      !!(await User.findOne({ username }))
+      !!(await User.findOne({
+        $or: [
+          {
+            username,
+          },
+          {
+            email,
+          },
+        ],
+      }))
     ) {
       throw new ResponseError("User already exists", 400);
     }
